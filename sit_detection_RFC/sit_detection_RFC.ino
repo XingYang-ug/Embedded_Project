@@ -64,15 +64,16 @@ void setup()
     BLE.advertise();
 
     Serial.println("IMU initialized");
+    Serial.println("BLE is advertising");
 }
 
 void loop()
 {
     float ax, ay, az, gx, gy, gz;
 
-    BLEDevice central = BLE.central();
+    BLE.poll();
 
-    if (central)
+    if (BLE.connected())
     {
         Serial.print("Connected to central: ");
         Serial.println(central.address());
