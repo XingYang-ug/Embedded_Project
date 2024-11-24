@@ -21,8 +21,8 @@ unsigned long startTime; // 计时开始时间
 unsigned long lastUpdateTime = 0; // 上次 snackCount 更新的时间
 
 // BLE UUID
-const char* uuid_service = "00001101-0000-1000-8000-00805f9b34fb";
-const char* uuid_characteristic = "00002101-0000-1000-8000-00805f9b34fb";
+const char* uuid_service = "1101";
+const char* uuid_characteristic = "1102";
 
 BLECharacteristic stateCharacteristic;
 
@@ -43,6 +43,7 @@ void setup() {
     }
 
     BLE.setLocalName("SnackCounter");
+    BLE.advertise();
     Serial.println("Uno R4 ready to receive BLE data...");
 }
 
