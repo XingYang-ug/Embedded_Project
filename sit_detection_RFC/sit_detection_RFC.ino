@@ -137,7 +137,7 @@ void loop() {
     }// 检查是否有 Central 设备连接
     stateCharacteristic.writeValue(0);
       if (central) {
-          Serial.println("Central connected");
+          // Serial.println("Central connected");
           while (central.connected()) {
             if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
                 IMU.readAcceleration(ax, ay, az);
@@ -166,18 +166,12 @@ void loop() {
                 if (standingCount >= THRESHOLD) {
                     Serial.println("Current State: Standing");
                     stateCharacteristic.writeValue(1);
-                    if(stateCharacteristic.written()){
-                        Serial.println("wrote val to stateChar");
-                    }
                 } else {
                     // Serial.println("Current State: Sitting");
                     stateCharacteristic.writeValue(0);
-                    if(stateCharacteristic.written()){
-                        Serial.println("wrote val to stateChar");
-                    }
                 }
             }
           }
-          Serial.println("Central disconnected");
+          // Serial.println("Central disconnected");
       }
 }
