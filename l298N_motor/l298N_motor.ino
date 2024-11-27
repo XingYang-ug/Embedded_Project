@@ -33,22 +33,22 @@
 //       analogWrite(enable, 0);
 //   }
 // }
-int enable = 2;  // L298N 的 ENA 引脚（PWM 输出）
-int IN1 = 3;     // L298N 的 IN1 引脚
+int enable = 8;  // L298N 的 ENA 引脚（PWM 输出）
+int IN1 = 9;     // L298N 的 IN1 引脚
+int IN2 = 10;
 
 void setup() {
     pinMode(enable, OUTPUT);
     pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
 
-    // 设置电机方向
-    digitalWrite(IN1, HIGH); // 正转
-    
-    // 全速运行
-    analogWrite(enable, 64);
+    // 设置反转方向
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+
     Serial.begin(9600);
-    Serial.println("Motor running at full speed...");
 }
 
 void loop() {
-    delay(1000);
+    analogWrite(enable, 180); // 控制转速
 }
