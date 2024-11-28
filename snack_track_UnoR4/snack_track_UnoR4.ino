@@ -39,6 +39,7 @@ void updateLCD() {
 
 void motor(int rotations) {
   // 计算转动时间并延迟
+    analogWrite(enable, motorSpeed);
     unsigned long timeToRotate = (rotations * 60 * 1000) / motorRPM; // 转动时间 (毫秒)
     delay(timeToRotate);
 
