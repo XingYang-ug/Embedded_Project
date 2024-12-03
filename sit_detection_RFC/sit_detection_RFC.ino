@@ -31,8 +31,7 @@ int predictionQueue[QUEUE_SIZE] = {0}; // Rolling buffer for predictions
 int queueIndex = 0;                    // Current index in the buffer
 const int THRESHOLD = 15;              // Number of "Standing" predictions to assert standing
 
-void setup()
-{
+void setup() {
     Serial.begin(9600);
     while (!Serial)
         ;
