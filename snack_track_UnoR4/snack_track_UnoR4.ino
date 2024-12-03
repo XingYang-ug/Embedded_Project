@@ -47,6 +47,7 @@ void motor(int rotations) {
 
     // 停止电机
     analogWrite(enable, 0);
+    delay(1000);
 }
 
 void setup() {
