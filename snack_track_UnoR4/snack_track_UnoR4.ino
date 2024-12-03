@@ -114,7 +114,7 @@ void handlePeripheral(BLEDevice& peripheral) {
             // TODO: another button for rst: standing = false etc
 
              // 如果是坐下状态，继续计时逻辑
-            if (!standing && millis() - lastUpdateTime >= 10000) {
+            if (!standing && millis() - lastUpdateTime >= 30000) {
                 snackCount++;
                 lastUpdateTime = millis();
                 updateLCD();
@@ -123,21 +123,31 @@ void handlePeripheral(BLEDevice& peripheral) {
             }
 
             // 处理按钮逻辑
-            if (standing && digitalRead(buttonPin) == LOW && !buttonPressed) {
-                buttonPressed = true;
-
-                // 清零 snackCount 并分发零食
-                if (snackCount > 0) {
-                    Serial.print("Dispensing snacks: ");
-                    Serial.println(snackCount);
-                    motor(snackCount);
-                    snackCount = 0;
-                    updateLCD();
-                } else {
-                    Serial.println("No snacks to dispense.");
+            while (standing) {
+                if (peripheral.discoverAttributes()) {
+                    BLECharacteristic characteristic1 = peripheral.characteristic(uuid_characteristic);
+                    uint8_t state1;
+                    characteristic.readValue(state1); // 读取状态值
+                    if (state1 == 0) {
+                      standing = false;
+                    }
                 }
-            } else if (digitalRead(buttonPin) == HIGH) {
-                buttonPressed = false;
+                if (digitalRead(buttonPin) == LOW && !buttonPressed) {
+                  buttonPressed = true;
+
+                  // 清零 snackCount 并分发零食
+                  if (snackCount > 0) {
+                      Serial.print("Dispensing snacks: ");
+                      Serial.println(snackCount);
+                      motor(snackCount);
+                      snackCount = 0;
+                      updateLCD();
+                  } else {
+                      Serial.println("No snacks to dispense.");
+                  }
+                } else if (digitalRead(buttonPin) == HIGH) {
+                    buttonPressed = false;
+                }
             }
         }
     }
