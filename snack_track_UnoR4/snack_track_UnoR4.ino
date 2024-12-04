@@ -13,7 +13,7 @@ const int motorRPM = 260; // 电机转速 (RPM)
 const int motorSpeed = 180; // PWM 信号占空比 (0-255)
 
 // 按钮引脚
-const int buttonPin = 7;
+const int buttonPin = 13;
 
 // 状态变量
 int snackCount = 0; // 零食计数
@@ -98,57 +98,45 @@ void loop() {
 }
 
 void handlePeripheral(BLEDevice& peripheral) {
-    while (peripheral.connected()) {
-        if (peripheral.discoverAttributes()) {
-            BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
-            uint8_t state;
-            characteristic.readValue(state); // 读取状态值
-            // Serial.print("Received state: ");
-            // Serial.println(state);
+      while (peripheral.discoverAttributes()) {
+          BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
+          uint8_t state;
+          characteristic.readValue(state); // 读取状态值
 
-            // 根据 state 更新状态
-            if (state == 1) { // 检测到站立
-                standing = true;
-                Serial.println("Standing detected. Timer paused.");
-            } 
-            // TODO: another button for rst: standing = false etc
+          // 根据 state 更新状态
+          if (state == 1 && !standing) { // 刚检测到站立
+              standing = true;
+              Serial.println("Standing detected. Timer paused.");
+              // 确保按钮状态是重置的
+              buttonPressed = false;
+          } else if (state == 0 && standing) { // 刚检测到坐下
+              standing = false;
+              buttonPressed = false;
+          }
 
-             // 如果是坐下状态，继续计时逻辑
-            if (!standing && millis() - lastUpdateTime >= 30000) {
-                snackCount++;
-                lastUpdateTime = millis();
-                updateLCD();
-                Serial.print("Snack count incremented: ");
-                Serial.println(snackCount);
-            }
+          // 如果是坐下状态，继续计时逻辑
+          if (!standing && millis() - lastUpdateTime >= 10000) {
+              snackCount++;
+              lastUpdateTime = millis();
+              updateLCD();
+              Serial.print("Snack count incremented: ");
+              Serial.println(snackCount);
+          }
 
-            // 处理按钮逻辑
-            while (standing) {
-                if (peripheral.discoverAttributes()) {
-                    BLECharacteristic characteristic1 = peripheral.characteristic(uuid_characteristic);
-                    uint8_t state1;
-                    characteristic.readValue(state1); // 读取状态值
-                    if (state1 == 0) {
-                      standing = false;
-                    }
-                }
-                if (digitalRead(buttonPin) == LOW && !buttonPressed) {
-                  buttonPressed = true;
-
-                  // 清零 snackCount 并分发零食
-                  if (snackCount > 0) {
-                      Serial.print("Dispensing snacks: ");
-                      Serial.println(snackCount);
-                      motor(snackCount);
-                      snackCount = 0;
-                      updateLCD();
-                  } else {
-                      Serial.println("No snacks to dispense.");
-                  }
-                } else if (digitalRead(buttonPin) == HIGH) {
-                    buttonPressed = false;
+          // 只在站立状态下处理按钮输入
+          if (standing) {
+            // 直接检测按钮是否被按下
+            if (digitalRead(buttonPin) == LOW) {
+                if (snackCount > 0) {
+                    Serial.println("Dispensing one snack");
+                    motor(1);
+                    snackCount--;
+                    updateLCD();
+                    delay(500);  // 简单的防抖动延时
+                } else {
+                    Serial.println("No snacks to dispense.");
                 }
             }
         }
-    }
+  }
 }
