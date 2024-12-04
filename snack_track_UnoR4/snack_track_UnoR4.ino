@@ -22,9 +22,8 @@ bool standing = false; // 用户站立状态
 unsigned long startTime; // 计时开始时间
 unsigned long lastUpdateTime = 0; // 上次 snackCount 更新的时间
 
-unsigned long lastDebounceTime = 0;  // 上次按钮状态变化的时间
-const unsigned long debounceDelay = 50;    // debounce 时间，单位毫秒
-int lastButtonState = HIGH;    // 上次按钮读取的状态
+unsigned long lastButtonPress = 0;  // 上次成功按压的时间
+const unsigned long BUTTON_COOLDOWN = 300;  // 按钮冷却时间，单位毫秒
 
 // BLE UUID
 const char* uuid_service = "1101";
@@ -143,6 +142,7 @@ void loop() {
 //     }
 // }
 
+
 void handlePeripheral(BLEDevice& peripheral) {
     while (peripheral.discoverAttributes()) {
         BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
@@ -169,35 +169,17 @@ void handlePeripheral(BLEDevice& peripheral) {
 
         // 只在站立状态下检测按钮
         if (standing) {
-            // 读取当前按钮状态
-            int reading = digitalRead(buttonPin);
-
-            // 如果按钮状态发生变化，重置 debounce 定时器
-            if (reading != lastButtonState) {
-                lastDebounceTime = millis();
-            }
-
-            // 如果按钮状态稳定超过 debounceDelay 时间
-            if ((millis() - lastDebounceTime) > debounceDelay) {
-                // 如果读到的是按下状态
-                if (reading == LOW) {
-                    if (snackCount > 0) {
-                        Serial.println("Dispensing one snack");
-                        motor(1);
-                        snackCount--;
-                        updateLCD();
-                        // 等待按钮释放
-                        while (digitalRead(buttonPin) == LOW) {
-                            delay(10);
-                        }
-                    } else {
-                        Serial.println("No snacks to dispense.");
-                    }
+            if (digitalRead(buttonPin) == LOW) { // 按钮被按下
+                if (snackCount > 0) {
+                    Serial.println("Button pressed! Dispensing one snack");
+                    motor(1);
+                    snackCount--;
+                    updateLCD();
+                    delay(200);  // 简单延时避免连续触发
+                } else {
+                    Serial.println("No snacks to dispense.");
                 }
             }
-
-            // 保存按钮状态以供下次比较
-            lastButtonState = reading;
         }
     }
 }
