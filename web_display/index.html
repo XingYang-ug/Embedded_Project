@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serial Port Reader</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    #status,
+    #stats {
+      flex: 1;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background-color: #f9f9f9;
+    }
+
+    #stats {
+      flex: 2; /* Make the stats section wider */
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Distraction Tracker</h1>
+  <p>
+    A smart vending system that rewards users with a snack after they study without distractions for 30 minutes.
+  </p>
+
+  <div id="container">
+    <!-- Status Section -->
+    <div id="status">
+      <h2>Status</h2>
+      <p><strong>Focus Status:</strong> <span id="standing-status">Not Connected</span></p>
+      <p><strong>Snack Amount:</strong> <span id="snack-amount">0</span></p>
+    </div>
+
+    <!-- Stats Section -->
+    <div id="stats">
+      <h2>Focus Time Statistics</h2>
+      <canvas id="sitting-time-chart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <button id="connect-button">Connect to Serial</button>
+
+  <script src="serial.js"></script>
+</body>
+
+</html>
