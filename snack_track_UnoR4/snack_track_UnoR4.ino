@@ -6,34 +6,35 @@
 LiquidCrystal lcd(2, 3, 4, 5, 6, 7);
 
 // 步进电机初始化
-int enable = 8;  // L298N 的 ENA 引脚（PWM 输出）
-int IN1 = 9;     // L298N 的 IN1 引脚
+int enable = 8; // L298N 的 ENA 引脚（PWM 输出）
+int IN1 = 9;    // L298N 的 IN1 引脚
 int IN2 = 10;
-const int motorRPM = 260; // 电机转速 (RPM)
+const int motorRPM = 260;   // 电机转速 (RPM)
 const int motorSpeed = 180; // PWM 信号占空比 (0-255)
 
 // 按钮引脚
 const int buttonPin = 13;
 
 // 状态变量
-int snackCount = 0; // 零食计数
-bool buttonPressed = false; // 按钮按下标志
-bool standing = false; // 用户站立状态
-unsigned long startTime; // 计时开始时间
+int snackCount = 0;               // 零食计数
+bool buttonPressed = false;       // 按钮按下标志
+bool standing = false;            // 用户站立状态
+unsigned long startTime;          // 计时开始时间
 unsigned long lastUpdateTime = 0; // 上次 snackCount 更新的时间
 
-unsigned long lastDebounceTime = 0;  // 上次按钮状态变化的时间
-const unsigned long debounceDelay = 50;    // debounce 时间，单位毫秒
-int lastButtonState = HIGH;    // 上次按钮读取的状态
+unsigned long lastDebounceTime = 0;     // 上次按钮状态变化的时间
+const unsigned long debounceDelay = 50; // debounce 时间，单位毫秒
+int lastButtonState = HIGH;             // 上次按钮读取的状态
 
 // BLE UUID
-const char* uuid_service = "1101";
-const char* uuid_characteristic = "1102";
+const char *uuid_service = "1101";
+const char *uuid_characteristic = "1102";
 
 BLECharacteristic stateCharacteristic;
 BLEDevice peripheral;
 
-void updateLCD() {
+void updateLCD()
+{
     lcd.setCursor(0, 0);
     lcd.print("SNACK: ");
     lcd.setCursor(7, 0);
@@ -41,9 +42,10 @@ void updateLCD() {
     lcd.print("  "); // 防止残留字符
 }
 
-void motor(int rotations) {
-  // 计算转动时间并延迟
-    unsigned long timeToRotate = (rotations * 60 * 1000) / (motorSpeed-25);
+void motor(int rotations)
+{
+    // 计算转动时间并延迟
+    unsigned long timeToRotate = (rotations * 60 * 1000) / (motorSpeed - 25);
 
     // 启动电机
     analogWrite(enable, motorSpeed);
@@ -54,7 +56,8 @@ void motor(int rotations) {
     delay(1000);
 }
 
-void setup() {
+void setup()
+{
     Serial.begin(9600);
     pinMode(buttonPin, INPUT_PULLUP); // 设置按钮为上拉输入
     lcd.begin(16, 2);
@@ -69,9 +72,11 @@ void setup() {
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
 
-    if (!BLE.begin()) {
+    if (!BLE.begin())
+    {
         Serial.println("Failed to start BLE!");
-        while (1);
+        while (1)
+            ;
     }
 
     BLE.setLocalName("SnackCounter");
@@ -80,21 +85,27 @@ void setup() {
     Serial.println("Scanning for BLE devices...");
 }
 
-void loop() {
-    while (!peripheral) {
-      // Serial.println("Finding peripheral...");
-      peripheral = BLE.available();
+void loop()
+{
+    while (!peripheral)
+    {
+        // Serial.println("Finding peripheral...");
+        peripheral = BLE.available();
     };
 
-    if (peripheral) {
+    if (peripheral)
+    {
         Serial.print("Found device: ");
         Serial.println(peripheral.address());
         Serial.println("Connecting...");
 
-        if (peripheral.connect()) {
+        if (peripheral.connect())
+        {
             Serial.println("Connected successfully!");
             handlePeripheral(peripheral);
-        } else {
+        }
+        else
+        {
             Serial.println("Failed to connect. Retrying...");
         }
     }
@@ -143,23 +154,43 @@ void loop() {
 //     }
 // }
 
-void handlePeripheral(BLEDevice& peripheral) {
-    while (peripheral.discoverAttributes()) {
+void handlePeripheral(BLEDevice &peripheral)
+{
+    while (peripheral.discoverAttributes())
+    {
         BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
         uint8_t state;
         characteristic.readValue(state); // 读取状态值
 
         // 根据 state 更新状态
-        if (state == 1) { // 检测到站立
+        if (state == 1)
+        { // 检测到站立
             standing = true;
             Serial.println("Standing detected. Timer paused.");
-        } else if (state == 0) {
+            JSONVar data;
+            data["isStanding"] = standing;
+            data["snackAmount"] = snackCount;
+            data["time"] = 0;
+
+            // Send JSON data
+            Serial.println(JSON.stringify(data));
+        }
+        else if (state == 0)
+        {
             standing = false;
             Serial.println("Sitting detected. Timer resumed.");
+            JSONVar data;
+            data["isStanding"] = standing;
+            data["snackAmount"] = snackCount;
+            data["time"] = millis() - lastUpdateTime;
+
+            // Send JSON data
+            Serial.println(JSON.stringify(data));
         }
 
         // 如果是坐下状态，继续计时逻辑
-        if (!standing && millis() - lastUpdateTime >= 10000) {
+        if (!standing && millis() - lastUpdateTime >= 10000)
+        {
             snackCount++;
             lastUpdateTime = millis();
             updateLCD();
@@ -168,29 +199,37 @@ void handlePeripheral(BLEDevice& peripheral) {
         }
 
         // 只在站立状态下检测按钮
-        if (standing) {
+        if (standing)
+        {
             // 读取当前按钮状态
             int reading = digitalRead(buttonPin);
 
             // 如果按钮状态发生变化，重置 debounce 定时器
-            if (reading != lastButtonState) {
+            if (reading != lastButtonState)
+            {
                 lastDebounceTime = millis();
             }
 
             // 如果按钮状态稳定超过 debounceDelay 时间
-            if ((millis() - lastDebounceTime) > debounceDelay) {
+            if ((millis() - lastDebounceTime) > debounceDelay)
+            {
                 // 如果读到的是按下状态
-                if (reading == LOW) {
-                    if (snackCount > 0) {
+                if (reading == LOW)
+                {
+                    if (snackCount > 0)
+                    {
                         Serial.println("Dispensing one snack");
                         motor(1);
                         snackCount--;
                         updateLCD();
                         // 等待按钮释放
-                        while (digitalRead(buttonPin) == LOW) {
+                        while (digitalRead(buttonPin) == LOW)
+                        {
                             delay(10);
                         }
-                    } else {
+                    }
+                    else
+                    {
                         Serial.println("No snacks to dispense.");
                     }
                 }
