@@ -13,7 +13,7 @@ const int motorRPM = 260; // 电机转速 (RPM)
 const int motorSpeed = 180; // PWM 信号占空比 (0-255)
 
 // 按钮引脚
-const int buttonPin = 7;
+const int buttonPin = 13;
 
 // 状态变量
 int snackCount = 0; // 零食计数
@@ -21,6 +21,10 @@ bool buttonPressed = false; // 按钮按下标志
 bool standing = false; // 用户站立状态
 unsigned long startTime; // 计时开始时间
 unsigned long lastUpdateTime = 0; // 上次 snackCount 更新的时间
+
+unsigned long lastDebounceTime = 0;  // 上次按钮状态变化的时间
+const unsigned long debounceDelay = 50;    // debounce 时间，单位毫秒
+int lastButtonState = HIGH;    // 上次按钮读取的状态
 
 // BLE UUID
 const char* uuid_service = "1101";
@@ -97,58 +101,103 @@ void loop() {
     delay(1000);
 }
 
+// void handlePeripheral(BLEDevice& peripheral) {
+//     while (peripheral.discoverAttributes()) {
+//         BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
+//         uint8_t state;
+//         characteristic.readValue(state); // 读取状态值
+
+//         // 根据 state 更新状态
+//         if (state == 1) { // 检测到站立
+//             standing = true;
+//             Serial.println("Standing detected. Timer paused.");
+//         } else if (state == 0) {
+//             standing = false;
+//             Serial.println("Sitting detected. Timer resumed.");
+//         }
+
+//         // 如果是坐下状态，继续计时逻辑
+//         if (!standing && millis() - lastUpdateTime >= 10000) {
+//             snackCount++;
+//             lastUpdateTime = millis();
+//             updateLCD();
+//             Serial.print("Snack count incremented: ");
+//             Serial.println(snackCount);
+//         }
+
+//         // 只在站立状态下检测按钮
+//         if (standing) {
+//             // 直接检测按钮是否被按下
+//             if (digitalRead(buttonPin) == LOW) {
+//                 if (snackCount > 0) {
+//                     Serial.println("Dispensing one snack");
+//                     motor(1);
+//                     snackCount--;
+//                     updateLCD();
+//                     delay(500);  // 简单的防抖动延时
+//                 } else {
+//                     Serial.println("No snacks to dispense.");
+//                 }
+//             }
+//         }
+//     }
+// }
+
 void handlePeripheral(BLEDevice& peripheral) {
-    while (peripheral.connected()) {
-        if (peripheral.discoverAttributes()) {
-            BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
-            uint8_t state;
-            characteristic.readValue(state); // 读取状态值
-            // Serial.print("Received state: ");
-            // Serial.println(state);
+    while (peripheral.discoverAttributes()) {
+        BLECharacteristic characteristic = peripheral.characteristic(uuid_characteristic);
+        uint8_t state;
+        characteristic.readValue(state); // 读取状态值
 
-            // 根据 state 更新状态
-            if (state == 1) { // 检测到站立
-                standing = true;
-                Serial.println("Standing detected. Timer paused.");
-            } 
-            // TODO: another button for rst: standing = false etc
+        // 根据 state 更新状态
+        if (state == 1) { // 检测到站立
+            standing = true;
+            Serial.println("Standing detected. Timer paused.");
+        } else if (state == 0) {
+            standing = false;
+            Serial.println("Sitting detected. Timer resumed.");
+        }
 
-             // 如果是坐下状态，继续计时逻辑
-            if (!standing && millis() - lastUpdateTime >= 30000) {
-                snackCount++;
-                lastUpdateTime = millis();
-                updateLCD();
-                Serial.print("Snack count incremented: ");
-                Serial.println(snackCount);
+        // 如果是坐下状态，继续计时逻辑
+        if (!standing && millis() - lastUpdateTime >= 10000) {
+            snackCount++;
+            lastUpdateTime = millis();
+            updateLCD();
+            Serial.print("Snack count incremented: ");
+            Serial.println(snackCount);
+        }
+
+        // 只在站立状态下检测按钮
+        if (standing) {
+            // 读取当前按钮状态
+            int reading = digitalRead(buttonPin);
+
+            // 如果按钮状态发生变化，重置 debounce 定时器
+            if (reading != lastButtonState) {
+                lastDebounceTime = millis();
             }
 
-            // 处理按钮逻辑
-            while (standing) {
-                if (peripheral.discoverAttributes()) {
-                    BLECharacteristic characteristic1 = peripheral.characteristic(uuid_characteristic);
-                    uint8_t state1;
-                    characteristic.readValue(state1); // 读取状态值
-                    if (state1 == 0) {
-                      standing = false;
+            // 如果按钮状态稳定超过 debounceDelay 时间
+            if ((millis() - lastDebounceTime) > debounceDelay) {
+                // 如果读到的是按下状态
+                if (reading == LOW) {
+                    if (snackCount > 0) {
+                        Serial.println("Dispensing one snack");
+                        motor(1);
+                        snackCount--;
+                        updateLCD();
+                        // 等待按钮释放
+                        while (digitalRead(buttonPin) == LOW) {
+                            delay(10);
+                        }
+                    } else {
+                        Serial.println("No snacks to dispense.");
                     }
                 }
-                if (digitalRead(buttonPin) == LOW && !buttonPressed) {
-                  buttonPressed = true;
-
-                  // 清零 snackCount 并分发零食
-                  if (snackCount > 0) {
-                      Serial.print("Dispensing snacks: ");
-                      Serial.println(snackCount);
-                      motor(snackCount);
-                      snackCount = 0;
-                      updateLCD();
-                  } else {
-                      Serial.println("No snacks to dispense.");
-                  }
-                } else if (digitalRead(buttonPin) == HIGH) {
-                    buttonPressed = false;
-                }
             }
+
+            // 保存按钮状态以供下次比较
+            lastButtonState = reading;
         }
     }
 }

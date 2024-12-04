@@ -2,8 +2,8 @@
 #include "rfc_model.h" // Include the exported model
 #include <ArduinoBLE.h>
 
-#define BLE_UUID_SIGNAL_SERVICE "00001101-0000-1000-8000-00805f9b34fb"
-#define BLE_UUID_SIGNAL_X "00002101-0000-1000-8000-00805f9b34fb"
+#define BLE_UUID_SIGNAL_SERVICE "1101"
+#define BLE_UUID_SIGNAL_X "1102"
 
 #define BLE_DEVICE_NAME "Elfo"
 #define BLE_LOCAL_NAME "Elfo"
