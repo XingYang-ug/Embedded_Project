@@ -5,7 +5,8 @@ let sittingStartTime = null;
 
 // Predefined values for the bar chart
 const sittingTimes = [10, 15, 20]; // Predefined durations (minutes)
-const sittingTimeLabels = ["Session 1", "Session 2", "Session 3"]; // Predefined labels
+const sittingTimeLabels = ["Sample 1", "Sample 2", "Sample 3"]; // Predefined labels
+let session_count = 1;
 const sittingTimeData = [...sittingTimes]; // Copy predefined values into the dataset
 
 let chart = null;
@@ -69,8 +70,14 @@ function trackSitting(isSitting) {
       );
       if (durationMinutes > 0) {
         sittingTimes.push(durationMinutes);
-        sittingTimeLabels.push(`Session ${sittingTimes.length}`);
+        sittingTimeLabels.push(`Session ${session_count++}`);
         sittingTimeData.push(durationMinutes);
+
+        if (sittingTimes.length > 3) {
+          sittingTimes.shift();
+          sittingTimeLabels.shift();
+          sittingTimeData.shift();
+        }
 
         updateChart();
       }
